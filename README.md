@@ -1,4 +1,4 @@
-# Benchmarking some semi-stupid string length functions
+# Benchmarking some semi-stupid function optimizations
 
 We are restricted by "The Norm" at all 42 schools for code written in C.
 Which limits us, among other things, in number of lines per function block and line length.
