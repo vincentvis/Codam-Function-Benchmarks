@@ -3,7 +3,7 @@
 We are restricted by "The Norm" at all 42 schools for code written in C.
 Which limits us, among other things, in number of lines per function block and line length.
 
-Even though the "need-for-speed" is not really a thing in our early Codam projects, I wanted to dive deeper in how to make some functions faster.
+Even though the "need-for-speed" is not really a thing in our early Codam projects, and I know that 'premature optimization is the root of all evil', I wanted to dive deeper in how to make some functions faster, and understand what some potential bottlenecks are for performance.
 
 ## Strlen - count the length of a string
 
@@ -16,11 +16,11 @@ The easy and naive approach that I saw everywhere is a while loop and divide by 
 
 ## number to string - convert a number to it's ASCII representation
 
-The usual approach is to get the modulus of the base (usually 10) and take that from a table of characters. 
+The usual approach is to get the modulus of the base (usually 10) and take that from a table of characters.
 So `423 % 10 = 3`, `"0123456789"[3] -> '3'`.
 This can be optimized by having a character bigger table and a larger modulo value (modulo 100 instead of 10) to process more characters per iteration.
 
 ## string to number - convert a ASCII representation of a string to a number
 
 If you take the last character of a string `"325"[0] -> '5'` you can easily convert from ascii value to actual numeric value.
-If you manipulate the type of pointer, you can also get either a `short` (2 bytes) or an `int` (4 bytes) and use a lookup table to determine the value. For the 4 byte version this adds a lookup table of 40KB, which on modern computers isn't a big deal. 
+If you manipulate the type of pointer, you can also get either a `short` (2 bytes) or an `int` (4 bytes) and use a lookup table to determine the value. For the 4 byte version this adds a lookup table of 40KB, which on modern computers isn't a big deal.
