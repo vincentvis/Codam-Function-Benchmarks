@@ -37,163 +37,95 @@ static t_tests tests[] = {
 	{.name = NULL},
 };
 
-
-void run_test(
-	t_tests *test, int i, t_strings *strings_short[NUM_STRINGS + 1],
-	t_strings *strings_medium[NUM_STRINGS + 1], t_strings *strings_long[NUM_STRINGS + 1],
-	t_strings *strings_mix[NUM_STRINGS + 1]
-) {
+void run_test(t_tests *test, int iteration, t_strings **strings, int *string_order) {
 	int      t     = 0;
-	uint64_t begin = 0, end = 0, diff = 0;
-	size_t   result = 0;
+	uint64_t begin = 0, end = 0;
+	size_t   result;
 
-	t               = 0;
-	while (t < NUM_STRINGS) {
+	while (t < MAX_POWER2) {
 		result = 0;
 		begin  = getUptimeInMilliseconds();
-		result = test->func(strings_short[t]->string);
+		result = test->func(strings[string_order[t]]->string);
 		end    = getUptimeInMilliseconds();
-		if (result != strings_short[t]->length) {
+		if (result != strings[string_order[t]]->length) {
 			printf(
 				"\n--- WRONG RESULT -- f: %s, res: %zu, exp: %zu\n", test->name, result,
-				strings_short[t]->length
+				strings[string_order[t]]->length
 			);
 		}
-		test->short_result[i] += end - begin;
+		test->times[string_order[t]] += end - begin;
 		t++;
 	}
-	t = 0;
-	while (t < NUM_STRINGS) {
-		result = 0;
-		begin  = getUptimeInMilliseconds();
-		result = test->func(strings_medium[t]->string);
-		end    = getUptimeInMilliseconds();
-		if (result != strings_medium[t]->length) {
-			printf(
-				"\n--- WRONG RESULT -- f: %s, res: %zu, exp: %zu\n", test->name, result,
-				strings_medium[t]->length
-			);
-		}
-		test->medium_result[i] += end - begin;
-		t++;
-	}
-	t = 0;
-	while (t < NUM_STRINGS) {
-		result = 0;
-		begin  = getUptimeInMilliseconds();
-		result = test->func(strings_long[t]->string);
-		end    = getUptimeInMilliseconds();
-		if (result != strings_long[t]->length) {
-			printf(
-				"\n--- WRONG RESULT -- f: %s, res: %zu, exp: %zu\n", test->name, result,
-				strings_long[t]->length
-			);
-		}
-		test->long_result[i] += end - begin;
-		t++;
-	}
-	t = 0;
-	while (t < NUM_STRINGS) {
-		result = 0;
-		begin  = getUptimeInMilliseconds();
-		result = test->func(strings_mix[t]->string);
-		end    = getUptimeInMilliseconds();
-		if (result != strings_mix[t]->length) {
-			printf(
-				"\n--- WRONG RESULT -- f: %s, res: %zu, exp: %zu\n", test->name, result,
-				strings_mix[t]->length
-			);
-		}
-		test->mix_result[i] += end - begin;
-		t++;
-	}
-
-	test->short_average_i[i]  = test->short_result[i] / NUM_STRINGS;
-	test->medium_average_i[i] = test->medium_result[i] / NUM_STRINGS;
-	test->long_average_i[i]   = test->long_result[i] / NUM_STRINGS;
-	test->mix_average_i[i]    = test->mix_result[i] / NUM_STRINGS;
-
-	test->short_average += test->short_average_i[i];
-	test->medium_average += test->medium_average_i[i];
-	test->long_average += test->long_average_i[i];
-	test->mix_average += test->mix_average_i[i];
 }
 
-void run_test2(t_tests *test, int iteration, t_strings **strings_short) {
-}
-
-void print_results(void) {
-	t_tests *t = &tests[0];
-
-#ifdef OUTPUT_CSV
-	printf("%s, %s, %s, %s, %s\n", "name", "short", "medium", "long", "mix");
-	while (t->name) {
-		printf(
-			"%s, %llu, %llu, %llu, %llu\n", t->name, t->short_average, t->medium_average,
-			t->long_average, t->mix_average
-		);
-		t++;
-	}
-#else
-	printf("%24s, %10s, %10s, %10s, %10s\n", "name", "short", "medium", "long", "mix");
-
-	while (t->name) {
-		printf(
-			"%24s, %10llu, %10llu, %10llu, %10llu\n", t->name, t->short_average,
-			t->medium_average, t->long_average, t->mix_average
-		);
-		t++;
-	}
-#endif
-}
 
 int main(void) {
 	srand(time(NULL));
 
-	t_strings strings[NUM_STRINGS + 1];
-	fill_strings((t_strings **)&strings, MAX_POWER2);
+	t_strings       **strings    = fill_strings();
 
-	// t_strings *strings_short[NUM_STRINGS + 1];
-	// t_strings *strings_medium[NUM_STRINGS + 1];
-	// t_strings *strings_long[NUM_STRINGS + 1];
-	// t_strings *strings_mix[NUM_STRINGS + 1];
-	// fill_random_strings(strings_short, strings_medium, strings_long, strings_mix);
-
-	const int         run_max    = (sizeof(tests) / sizeof(t_tests)) - 1;
+	const int         num_tests  = (sizeof(tests) / sizeof(t_tests)) - 1;
 	static const char progress[] = "XXXXXXXXXXXXXXXXXXXX";
 
-	for (int i = 0; i < ITERATIONS; ++i) {
-		int *run_order = determine_run_order(run_max);
-		int  run_index = 0;
+	// set times to zero
+	for (int f = 0; f < num_tests; ++f) {
+		for (int t = 0; t < MAX_POWER2; ++t) {
+			tests[f].times[t] = 0;
+			tests[f].mean[t]  = 0;
+		}
+	}
 
-		for (int t = 0; t < run_max; ++t) {
+	for (int i = 0; i < ITERATIONS; ++i) {
+		int *test_run_order = determine_run_order(num_tests);
+		int *string_order   = determine_string_order();
+		int  run_index      = 0;
+
+
+		for (int t = 0; t < num_tests; ++t) {
 #if SHOW_PROGRESS
 			printf(
 				"\riteration %i [%-19.*s] %-25s", i,
-				(int)((float)i / ITERATIONS_F * 20.0), progress, tests[run_order[t]].name
+				(int)((float)i / ITERATIONS_F * 20.0), progress,
+				tests[test_run_order[t]].name
 			);
 			fflush(stdout);
 #endif
-
-			// run_test(
-			// 	&tests[run_order[t]], i, strings_short, strings_medium, strings_long,
-			// 	strings_mix
-			// );
-			run_test2(&tests[run_order[t]], i, strings);
+			run_test(&tests[test_run_order[t]], i, strings, string_order);
 		}
+		free(test_run_order);
 	}
 #if SHOW_PROGRESS
 	printf("\n");
 #endif
 
-	for (int i = 0; i < run_max; ++i) {
-		tests[i].short_average /= ITERATIONS;
-		tests[i].medium_average /= ITERATIONS;
-		tests[i].long_average /= ITERATIONS;
-		tests[i].mix_average /= ITERATIONS;
+	// calculate mean:
+	for (int f = 0; f < num_tests; ++f) {
+		for (int t = 0; t < MAX_POWER2; ++t) {
+			tests[f].mean[t] = tests[f].times[t] / ITERATIONS;
+		}
+	}
+	// print results
+	printf("name,");
+	int num_chars = 1;
+	int l         = 0;
+	while (l < MAX_POWER2) {
+		printf("%ich%*s", num_chars, !(l == (MAX_POWER2 - 1)), ",");
+		num_chars *= 2;
+		l++;
+	}
+	printf("\n");
+
+	for (int f = 0; f < num_tests; ++f) {
+		printf("%s,", tests[f].name);
+		for (int t = 0; t < MAX_POWER2; ++t) {
+			printf("%llu%.*s", tests[f].mean[t], !(t == (MAX_POWER2 - 1)), ",");
+		}
+		printf("\n");
 	}
 
-	print_results();
 
+	// print_results();
+
+	free_strings(strings);
 	return 0;
 }

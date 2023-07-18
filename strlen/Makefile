@@ -13,13 +13,13 @@ ASM_OBJ = $(OBJ_DIR)ft_strlen_asm.o
 DEP := $(OBJECTS:%.o=%.d)
 
 all: $(OBJECTS) assembly
-	$(CC) $(OBJECTS) $(ASM_OBJ) -O0 -o $(NAME).out
+	$(CC) -g $(OBJECTS) $(ASM_OBJ) -O0 -o $(NAME).out
 
 -include $(DEP)
 
 $(OBJ_DIR)%.o: %.c
 	mkdir -p $(dir $@)
-	$(CC) -MMD -c $< -o $@
+	$(CC) -g -MMD -c $< -o $@
 
 assembly:
 	nasm -g -O0 -f macho64 $(ASM_FILE) -o $(ASM_OBJ)

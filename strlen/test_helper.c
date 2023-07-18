@@ -33,48 +33,35 @@ t_strings *new_string_length_between(size_t min_length, size_t max_length) {
 	return new_string(random_clamp(min_length, max_length));
 }
 
-void fill_random_strings(
-	t_strings *strings_short[NUM_STRINGS], t_strings *strings_medium[NUM_STRINGS],
-	t_strings *strings_long[NUM_STRINGS], t_strings *strings_mix[NUM_STRINGS]
-) {
-	for (int i = 0; i < NUM_STRINGS; ++i) {
-		strings_short[i]  = new_string_length_between(1, 50);
-		strings_medium[i] = new_string_length_between(2500, 5000);
-		strings_long[i]   = new_string_length_between(45000, 75000);
 
-		switch (random_clamp(0, 3)) {
-			case 1:
-				strings_mix[i] = strings_short[i];
-				break;
-			case 2:
-				strings_mix[i] = strings_medium[i];
-				break;
-			default:
-				strings_mix[i] = strings_long[i];
-				break;
-		}
-	}
-}
+t_strings **fill_strings(void) {
+	t_strings **strings = malloc(sizeof(strings) * (MAX_POWER2 + 1));
+	size_t      length  = 1;
+	size_t      index   = 0;
 
-void fill_strings(t_strings *strings[NUM_STRINGS + 1], int max) {
-	size_t length = 1;
-	size_t index  = 0;
-
-	while (index < max) {
+	while (index <= MAX_POWER2) {
 		strings[index] = new_string(length);
 		index++;
 		length *= 2;
 	}
+	return strings;
+}
+
+void free_strings(t_strings **strings) {
+	for (int i = 0; i <= MAX_POWER2; ++i) {
+		free(strings[i]);
+	}
+	free(strings);
 }
 
 void random_sort(int **run_order, int max) {
 	int swap_a;
 	int swap_b;
 	int tmp;
-	int i;
+	int dynamic_max = max * max * 2;
+	int i           = 0;
 
-	i = 0;
-	while (i < 100) {
+	while (i < dynamic_max) {
 		swap_a               = random_clamp(0, max);
 		swap_b               = random_clamp(0, max);
 		tmp                  = (*run_order)[swap_a];
@@ -84,9 +71,31 @@ void random_sort(int **run_order, int max) {
 	}
 }
 
+int *determine_string_order() {
+	int        n = 0;
+	static int string_order[MAX_POWER2 + 1];
+
+	while (n < MAX_POWER2) {
+		string_order[n] = n;
+		n++;
+	}
+	n = 0;
+	int swap_a, swap_b;
+	int tmp;
+	while (n < 170) {
+		swap_a               = random_clamp(0, MAX_POWER2);
+		swap_b               = random_clamp(0, MAX_POWER2);
+		tmp                  = string_order[swap_a];
+		string_order[swap_a] = string_order[swap_b];
+		string_order[swap_b] = tmp;
+		n++;
+	}
+	return string_order;
+}
+
 int *determine_run_order(int max) {
 	int  n         = 0;
-	int *run_order = malloc(max);
+	int *run_order = malloc(max + 1);
 
 	while (n < max) {
 		run_order[n] = n;
